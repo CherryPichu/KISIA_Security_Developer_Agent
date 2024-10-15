@@ -61,7 +61,7 @@ func TestApplicationDB_CRUD(t1 *testing.T) {
 			appdb := NewApplicationDB()
 			appdb.CreateTable()
 
-			wind32 := GetApplicationList_WMI()[0]
+			wind32 := GetApplicationList()[0]
 			data := DapplicationDB{}
 			data.Name = wind32.Name
 			data.Description = wind32.Description

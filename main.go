@@ -22,9 +22,15 @@ const (
 	GetSystemInfo  string = "GetSystemInfo"
 	GetApplication string = "GetApplication"
 	StopAgent      string = "StopAgent"
+	ChangeProtocol string = "ChangeProtocol"
 )
 
 func main() {
+	var err error
+	Network.NgMgr, err = Network.NewNetworkManager()
+	if err != nil {
+		panic(err)
+	}
 
 	if err := loadEnv(); err != nil {
 		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
@@ -83,6 +89,7 @@ func initSysutil() (*Extension.Sysutils, [16]byte, error) {
 }
 
 func registerAgent(uuid [16]byte) error {
+
 	hsItem := HSProtocol.HS{
 		ProtocolID:     HSProtocol.HTTP,
 		HealthStatus:   HSProtocol.NEW,
@@ -94,7 +101,7 @@ func registerAgent(uuid [16]byte) error {
 		Data:           []byte{},
 	}
 
-	ack, err := Network.SendPacket(hsItem)
+	ack, err := Network.NgMgr.SendPacket(hsItem)
 	if err != nil {
 		return fmt.Errorf("에이전트 등록 실패: %v", err)
 	}
@@ -107,11 +114,11 @@ func registerAgent(uuid [16]byte) error {
 }
 
 func collectInitialInfo() error {
-	if err := Network.SendApplicationInfo(); err != nil {
+	if err := Network.NgMgr.SendApplicationInfo(); err != nil {
 		return fmt.Errorf("응용 프로그램 정보 전송 실패: %v", err)
 	}
 
-	if err := Network.SendSystemInfo(); err != nil {
+	if err := Network.NgMgr.SendSystemInfo(); err != nil {
 		return fmt.Errorf("시스템 정보 전송 실패: %v", err)
 	}
 
@@ -131,7 +138,7 @@ func executeCommand(uuid [16]byte) error {
 
 	protocol := agsRcrd[0].Protocol
 	hsItem := HSProtocol.HS{
-		ProtocolID:     uint8(protocol),
+		ProtocolID:     protocol,
 		HealthStatus:   HSProtocol.RUN,
 		Command:        HSProtocol.FETCH_INSTRUCTION,
 		Identification: 12345,
@@ -142,7 +149,7 @@ func executeCommand(uuid [16]byte) error {
 	}
 
 	fmt.Print("fetch instruction : ")
-	ack, err := Network.SendPacket(hsItem)
+	ack, err := Network.NgMgr.SendPacket(hsItem)
 	if err != nil {
 		return fmt.Errorf("패킷 전송 실패: %v", err)
 	}
@@ -179,11 +186,11 @@ func executeCommand(uuid [16]byte) error {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
 	case GetApplication:
-		if err := Network.SendApplicationInfo(); err != nil {
+		if err := Network.NgMgr.SendApplicationInfo(); err != nil {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
 	case GetSystemInfo:
-		if err := Network.SendSystemInfo(); err != nil {
+		if err := Network.NgMgr.SendSystemInfo(); err != nil {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
 	case StopAgent:
@@ -193,6 +200,10 @@ func executeCommand(uuid [16]byte) error {
 		fmt.Println("잠시후 종료...")
 		time.Sleep(5 * time.Second)
 		os.Exit(0)
+	case ChangeProtocol:
+		if err := Network.NgMgr.ChangeProtocol(ack.ProtocolID); err != nil {
+			return fmt.Errorf("명령어 실행 실패: %v", err)
+		}
 	}
 
 	if err = Core.ChangeStatusToWait(ack); err != nil {
@@ -223,26 +234,17 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	if err != nil {
 		fmt.Println("====== Run Fail ===== ")
 		fmt.Println()
-		if err := Network.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
+		if err := Network.NgMgr.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
 		return fmt.Errorf("명령어 실행 중 에러: %v", err)
 	}
-	if err := Network.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
+	if err := Network.NgMgr.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
 	fmt.Println("====== Run success ===== ")
 	fmt.Println()
 	return nil
-}
-
-func replacePlaceholder(command string) string {
-	exePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("Error getting executable path:", err)
-		return command
-	}
-	return strings.ReplaceAll(command, `#{C:\Path\To\agent.exe}`, exePath)
 }
 
 func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error {
@@ -260,12 +262,12 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	cmdLog, err := shell.Execute(instD.Cleanup)
 	fmt.Println("cmdLog : " + cmdLog)
 	if err != nil {
-		if err := Network.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
+		if err := Network.NgMgr.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
 		return fmt.Errorf("명령어 실행 중 에러: %v", err)
 	}
-	if err := Network.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
+	if err := Network.NgMgr.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
 	return nil
@@ -282,4 +284,13 @@ func ReplaceDomainWithEnv(url string) string {
 func ReplaceagentUUID(str string, uuid string) string {
 	replaceStr := strings.Replace(str, "#{agentUUID}", uuid, -1)
 	return replaceStr
+}
+
+func replacePlaceholder(command string) string {
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("Error getting executable path:", err)
+		return command
+	}
+	return strings.ReplaceAll(command, `#{C:\Path\To\agent.exe}`, exePath)
 }

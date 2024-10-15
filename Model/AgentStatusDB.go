@@ -9,7 +9,6 @@ import (
 )
 
 // Protocol 유형을 정의합니다.
-type Protocol uint8
 
 type AgentStatusDB struct {
 	dbName string
@@ -18,8 +17,8 @@ type AgentStatusDB struct {
 type AgentStatusRecord struct {
 	ID        int
 	UUID      string
-	Status    int
-	Protocol  Protocol
+	Status    HSProtocol.AGENTSTATUS
+	Protocol  HSProtocol.PROTOCOL
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -144,7 +143,7 @@ func (s *AgentStatusDB) UpdateRecord(data *AgentStatusRecord) error {
 	return nil
 }
 
-func (s *AgentStatusDB) UpdateStatus(status int) error {
+func (s *AgentStatusDB) UpdateStatus(status HSProtocol.AGENTSTATUS) error {
 	db, err := getDBPtr()
 	if err != nil {
 		return err

@@ -169,7 +169,7 @@ type Win32_Product struct {
 // CreateAt        time.Time // 레코드 생성 시간
 // UpdateAt        time.Time // 레코드 업데이트 시간
 // deletedAt       time.Time
-func GetApplicationList_WMI() []DapplicationDB {
+func GetApplicationList() []DapplicationDB {
 	sysuil, err := Extension.NewSysutils()
 	if err != nil {
 		return nil

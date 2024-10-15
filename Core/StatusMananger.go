@@ -31,7 +31,7 @@ func ChangeStatusToRun(hs *HSProtocol.HS) error {
 	}
 
 	// 서버에 새로운 구조체 전송
-	ack, err := Network.SendPacket(newHS)
+	ack, err := Network.NgMgr.SendPacket(newHS)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -65,7 +65,7 @@ func ChangeStatusToWait(hs *HSProtocol.HS) error {
 	}
 
 	// 서버에 새로운 구조체 전송
-	ack, err := Network.SendPacket(newHS)
+	ack, err := Network.NgMgr.SendPacket(newHS)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -99,7 +99,7 @@ func ChangeStatusToDeleted(hs *HSProtocol.HS) error {
 	}
 
 	// 서버에 새로운 구조체 전송
-	ack, err := Network.SendPacket(newHS)
+	ack, err := Network.NgMgr.SendPacket(newHS)
 	if err != nil {
 		fmt.Println(err)
 		return err

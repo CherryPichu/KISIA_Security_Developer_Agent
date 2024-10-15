@@ -7,15 +7,7 @@ import (
 	"net"
 )
 
-func SendPacketByTcp(hs HSProtocol.HS) (*HSProtocol.HS, error) {
-	// TCP 서버에 연결
-	conn, err := net.Dial("tcp", "localhost:8080")
-	if err != nil {
-		fmt.Println("Error connecting to TCP server:", err)
-		return nil, err
-	}
-	defer conn.Close()
-
+func sendPacketByTcp(hs HSProtocol.HS, conn net.Conn) (*HSProtocol.HS, error) {
 	fmt.Println("Connected to TCP server")
 
 	// HS 객체를 직렬화 (예: ToBytes 함수 사용)
