@@ -11,11 +11,15 @@ import (
 )
 
 type Cmd struct {
-	cmd *exec.Cmd
+	IsAvailable bool
+	Name        string
 }
 
 func NewCmd() *Cmd {
-	return &Cmd{}
+	return &Cmd{
+		Name:        "Cmd",
+		IsAvailable: true,
+	}
 }
 
 func (c *Cmd) Execute(command string) (string, error) {

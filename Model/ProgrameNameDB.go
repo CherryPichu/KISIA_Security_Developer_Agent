@@ -79,7 +79,9 @@ func GetApplicationList_fileBase() ([]string, error) {
 	for _, dirPath := range []string{PROGRAMEPATH_x86, PROGRAMEPATH_x64, STARTPROGRAGE, STARTMENU} {
 		files, err := os.ReadDir(dirPath)
 		if err != nil {
-			return nil, fmt.Errorf(err.Error())
+			fmt.Println("다음 경로에서 파일 가져오기 실패" + dirPath)
+			continue
+			//return nil, fmt.Errorf(err.Error())
 		}
 
 		for _, file := range files {

@@ -164,6 +164,10 @@ func executeCommand(uuid [16]byte) error {
 	}
 	instD.Command = replacePlaceholder(instD.Command)
 	instD.Cleanup = replacePlaceholder(instD.Cleanup)
+	instD.Command = ReplaceDomainWithEnv(instD.Command)
+	instD.Cleanup = ReplaceDomainWithEnv(instD.Cleanup)
+	instD.Command = ReplaceagentUUID(instD.Command, HSProtocol.ByteArrayToHexString(uuid))
+	instD.Cleanup = ReplaceagentUUID(instD.Cleanup, HSProtocol.ByteArrayToHexString(uuid))
 	//fmt.Println(instD.AgentAction)
 	switch instD.AgentAction {
 	case ExecutePayLoad:
@@ -208,11 +212,17 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 		shell = Execute.NewCmd() // 해당 부분 코드를 powershell 도 실핼 수 있게 수정할 것
 	} else if instD.Tool == "powershell" {
 		shell = Execute.NewPowerShell()
+	} else if instD.Tool == "shell" {
+		shell = Execute.NewShell()
 	}
 
+	fmt.Println("====== Running ===== ")
 	cmdLog, err := shell.Execute(instD.Command)
+	fmt.Println("====== Execute Log ===== ")
 	fmt.Println("Log : " + cmdLog)
 	if err != nil {
+		fmt.Println("====== Run Fail ===== ")
+		fmt.Println()
 		if err := Network.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
@@ -221,6 +231,8 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	if err := Network.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
+	fmt.Println("====== Run success ===== ")
+	fmt.Println()
 	return nil
 }
 
@@ -230,7 +242,7 @@ func replacePlaceholder(command string) string {
 		fmt.Println("Error getting executable path:", err)
 		return command
 	}
-	return strings.ReplaceAll(command, "#{C:\\Path\\To\\agent.exe}", exePath)
+	return strings.ReplaceAll(command, `#{C:\Path\To\agent.exe}`, exePath)
 }
 
 func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error {
@@ -257,4 +269,17 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
 	return nil
+}
+
+func ReplaceDomainWithEnv(url string) string {
+	serverIP := os.Getenv("SERVER_IP")
+
+	// #{http://server/ipinfo}을 "http://SERVER_IP/ipinfo"로 대체
+	replacedURL := strings.Replace(url, "#{http://server/ipinfo}", fmt.Sprintf("http://%s/ipinfo", serverIP), -1)
+	return replacedURL
+}
+
+func ReplaceagentUUID(str string, uuid string) string {
+	replaceStr := strings.Replace(str, "#{agentUUID}", uuid, -1)
+	return replaceStr
 }
