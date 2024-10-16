@@ -81,6 +81,7 @@ func (ng *NetworkManager) ChangeProtocol(ptl HSProtocol.PROTOCOL) error {
 		return err
 	}
 	statusRecords, err := agdb.SelectAllRecords()
+	fmt.Println(statusRecords)
 	record := statusRecords[0]
 	if record.Protocol == ptl {
 		fmt.Println("Protocol is already set.")

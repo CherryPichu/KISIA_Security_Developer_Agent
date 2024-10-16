@@ -208,6 +208,8 @@ func executeCommand(uuid [16]byte) error {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
 		fmt.Println("Agent Change Protocol Type by HTTP")
+	default:
+		fmt.Println("invalid Action String")
 	}
 
 	if err = Core.ChangeStatusToWait(ack); err != nil {
@@ -227,14 +229,22 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 		shell = Execute.NewCmd() // 해당 부분 코드를 powershell 도 실핼 수 있게 수정할 것
 	} else if instD.Tool == "powershell" {
 		shell = Execute.NewPowerShell()
-	} else if instD.Tool == "shell" {
+	} else if instD.Tool == "bash" {
 		shell = Execute.NewShell()
+	} else {
+		fmt.Println(" No Shell! Tool 필드 값이 정확힌 지 확인해주세요. ex. cmd, powershell, bash")
+		return nil
 	}
 
 	fmt.Println("====== Running ===== ")
 	cmdLog, err := shell.Execute(instD.Command)
 	fmt.Println("====== Execute Log ===== ")
 	fmt.Println("Log : " + cmdLog)
+	const maxLogLength = 10000
+	if len(cmdLog) > maxLogLength {
+		cmdLog = cmdLog[:maxLogLength] + "...(출력 생략됨)"
+	}
+
 	if err != nil {
 		fmt.Println("====== Run Fail ===== ")
 		fmt.Println()
@@ -261,11 +271,19 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 		shell = Execute.NewCmd() // 해당 부분 코드를 powershell 도 실핼 수 있게 수정할 것
 	} else if instD.Tool == "powershell" {
 		shell = Execute.NewPowerShell()
+	} else if instD.Tool == "bash" {
+		shell = Execute.NewShell()
+	} else {
+		fmt.Println(" No Shell! Tool 필드 값에 정확한 값을 넣주세요.. ex. cmd, powershell, bash")
+		return nil
 	}
 
+	fmt.Println("====== Running ===== ")
 	cmdLog, err := shell.Execute(instD.Cleanup)
-	fmt.Println("cmdLog : " + cmdLog)
+	fmt.Println("====== Execute Log ===== ")
+	fmt.Println("Log : " + cmdLog)
 	if err != nil {
+		fmt.Println("====== Run Fail ===== ")
 		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
@@ -274,6 +292,8 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	if err := Network.NgMgr.SendLogData(hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
+	fmt.Println("====== Run success ===== ")
+	fmt.Println()
 	return nil
 }
 

@@ -74,16 +74,17 @@ func (a *ProgramsDB) CreateTable() error {
 }
 
 func GetApplicationList_fileBase() ([]string, error) {
-
 	var shell Execute.ICommandExecutor
 	shell = Execute.NewShell()
-	if output, err := shell.Execute("dpkg --list | awk '{print $2}' | column -t"); err != nil {
+
+	output, err := shell.Execute("dpkg --list | awk '{print $2}' | column -t | head -n 40")
+	if err != nil {
 		return nil, err
 	}
-	strings.Split(output, "\n")
+
 	var fileNameList []string
-	for fileName := range strings.Split(output, "\n") {
-		if fileName = "" {
+	for _, fileName := range strings.Split(output, "\n") {
+		if fileName == "" {
 			continue
 		}
 		fileNameList = append(fileNameList, fileName)

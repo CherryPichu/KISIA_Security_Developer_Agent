@@ -258,7 +258,6 @@ func (s *AgentStatusDB) SelectAllRecords() ([]AgentStatusRecord, error) {
 
 	query := fmt.Sprintf(`SELECT id, uuid, status, protocol, createAt, updateAt FROM %s`, s.dbName)
 	rows, err := db.Query(query)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
