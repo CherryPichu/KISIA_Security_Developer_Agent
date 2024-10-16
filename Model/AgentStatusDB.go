@@ -134,8 +134,8 @@ func (s *AgentStatusDB) UpdateRecord(data *AgentStatusRecord) error {
 	}
 	defer db.Close()
 
-	query := fmt.Sprintf(`UPDATE %s SET status = ? WHERE uuid = ?`, s.dbName)
-	_, err = db.Exec(query, data.Status, data.UUID)
+	query := fmt.Sprintf(`UPDATE %s SET status = ?, protocol = ? WHERE uuid = ?`, s.dbName)
+	_, err = db.Exec(query, data.Status, data.Protocol, data.UUID)
 	if err != nil {
 		return err
 	}

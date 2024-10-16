@@ -19,7 +19,7 @@ func ChangeStatusToRun(hs *HSProtocol.HS) error {
 	}
 
 	// 새로운 구조체 생성 및 초기화
-	newHS := HSProtocol.HS{
+	newHS := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,
 		HealthStatus:   HSProtocol.RUN,
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,
@@ -53,7 +53,7 @@ func ChangeStatusToWait(hs *HSProtocol.HS) error {
 		return err
 	}
 
-	newHS := HSProtocol.HS{
+	newHS := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,
 		HealthStatus:   HSProtocol.WAIT,
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,
@@ -87,7 +87,7 @@ func ChangeStatusToDeleted(hs *HSProtocol.HS) error {
 		return err
 	}
 
-	newHS := HSProtocol.HS{
+	newHS := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,
 		HealthStatus:   HSProtocol.DELETED,
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,

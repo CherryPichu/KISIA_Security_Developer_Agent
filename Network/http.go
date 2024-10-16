@@ -11,10 +11,10 @@ import (
 
 //https://agent
 
-func sendPacketByHttp(hs HSProtocol.HS) (*HSProtocol.HS, error) {
+func sendPacketByHttp(hs *HSProtocol.HS) (*HSProtocol.HS, error) {
 	// HS 객체를 직렬화 (예: ToBytes 함수 사용)
 	HSMgr := HSProtocol.NewHSProtocolManager()
-	data, err := HSMgr.ToBytes(&hs)
+	data, err := HSMgr.ToBytes(hs)
 	if err != nil {
 		fmt.Println("Error serializing HS  object:", err)
 		return nil, err

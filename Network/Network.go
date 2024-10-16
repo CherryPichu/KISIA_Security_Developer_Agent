@@ -3,6 +3,7 @@ package Network
 import (
 	"agent/Extension"
 	"agent/Model"
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -38,23 +40,35 @@ func NewNetworkManager() (*NetworkManager, error) {
 		return nil, err
 	}
 	rd := records[0]
+	NgMgr.protocol = rd.Protocol
 
-	if rd.Protocol == HSProtocol.TCP {
-
+	if NgMgr.protocol == HSProtocol.TCP {
+		if err = NgMgr.connectTCP(); err != nil {
+			return nil, err
+		}
 	}
 
 	return NgMgr, nil
 }
 
 func (ng *NetworkManager) connectTCP() error {
+	fmt.Println("Connection 시도")
 	var conn net.Conn
-	conn, err := net.Dial("tcp", "uskawjdu.iptime.org:8080")
+	conn, err := net.Dial("tcp", os.Getenv("SERVER_IP")+":8080")
+	fmt.Println(os.Getenv("SERVER_IP") + ":8080")
 	tcpConn := conn.(*net.TCPConn)
 	if err != nil {
 		return err
 	}
-	ng.conn = tcpConn
 
+	message := ""
+	// ping
+	_, err = conn.Write([]byte(message))
+	if err != nil {
+		fmt.Println("TCP 연결 실패:", err)
+		return err
+	}
+	ng.conn = tcpConn
 	ng.conn.SetKeepAlive(true)
 	ng.conn.SetKeepAlivePeriod(60 * time.Second)
 
@@ -68,8 +82,19 @@ func (ng *NetworkManager) ChangeProtocol(ptl HSProtocol.PROTOCOL) error {
 	}
 	statusRecords, err := agdb.SelectAllRecords()
 	record := statusRecords[0]
+	if record.Protocol == ptl {
+		fmt.Println("Protocol is already set.")
+		return nil
+	}
 	record.Protocol = ptl
 	ng.protocol = ptl
+
+	if ptl == HSProtocol.TCP {
+
+		if err = ng.connectTCP(); err != nil {
+			return err
+		}
+	}
 
 	if err = agdb.UpdateRecord(&record); err != nil {
 		return err
@@ -77,18 +102,24 @@ func (ng *NetworkManager) ChangeProtocol(ptl HSProtocol.PROTOCOL) error {
 	return nil
 }
 
-func (ng *NetworkManager) SendPacket(hs HSProtocol.HS) (*HSProtocol.HS, error) {
+func (ng *NetworkManager) SendPacket(hs *HSProtocol.HS) (*HSProtocol.HS, error) {
 	buffer := []byte{}
+	hs.ProtocolID = ng.protocol
 	switch ng.protocol {
 	case HSProtocol.TCP:
+		reader := bufio.NewReader(ng.conn)
+		reader.Discard(reader.Buffered()) // 남은 버퍼를 버림
 		_, err := ng.conn.Write(buffer)
 		if err != nil {
+			fmt.Printf("Error writing to connection: %v\n", err)
 			// 재연결
 			err = ng.connectTCP()
 			if err != nil {
 				return nil, err
 			}
 		}
+		//fmt.Println("SendPacketByTCP")
+
 		return sendPacketByTcp(hs, ng.conn)
 	case HSProtocol.HTTP:
 		return sendPacketByHttp(hs)
@@ -98,7 +129,7 @@ func (ng *NetworkManager) SendPacket(hs HSProtocol.HS) (*HSProtocol.HS, error) {
 }
 
 func (ng *NetworkManager) SendAck(hs *HSProtocol.HS) error {
-	hsItem := HSProtocol.HS{
+	hsItem := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,   //
 		HealthStatus:   HSProtocol.WAIT, //
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,
@@ -119,7 +150,7 @@ func (ng *NetworkManager) SendAck(hs *HSProtocol.HS) error {
 }
 
 func (ng *NetworkManager) SendErrorAck(hs *HSProtocol.HS) error {
-	hsItem := HSProtocol.HS{
+	hsItem := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,   //
 		HealthStatus:   HSProtocol.WAIT, //
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,
@@ -182,7 +213,7 @@ func (ng *NetworkManager) SendLogData(hs *HSProtocol.HS, cmdLog string, command 
 		fmt.Println("Error : ", err)
 	}
 
-	hsItem := HSProtocol.HS{
+	hsItem := &HSProtocol.HS{
 		ProtocolID:     hs.ProtocolID,
 		HealthStatus:   0,
 		Command:        HSProtocol.SEND_PROCEDURE_LOG,
@@ -257,7 +288,7 @@ func (ng *NetworkManager) SendApplicationInfo() error {
 			return err
 		}
 
-		hsItem := HSProtocol.HS{
+		hsItem := &HSProtocol.HS{
 			ProtocolID:     HSProtocol.UNKNOWN, // 자동으로 채워줌
 			HealthStatus:   HSProtocol.NEW,
 			Command:        HSProtocol.SEND_AGENT_APP_INFO,
@@ -361,7 +392,7 @@ func (ng *NetworkManager) SendSystemInfo() error {
 	}
 
 	bsysinfo, err := json.Marshal(sysInfo)
-	hsItem := HSProtocol.HS{
+	hsItem := &HSProtocol.HS{
 		ProtocolID:     HSProtocol.HTTP, //
 		HealthStatus:   HSProtocol.NEW,  //
 		Command:        HSProtocol.SEND_AGENT_SYS_INFO,

@@ -14,28 +14,27 @@ import (
 	"time"
 )
 
-type AgentAction string
-
 const (
-	ExecutePayLoad string = "ExecutePayLoad"
-	ExecuteCleanUp string = "ExecuteCleanUp"
-	GetSystemInfo  string = "GetSystemInfo"
-	GetApplication string = "GetApplication"
-	StopAgent      string = "StopAgent"
-	ChangeProtocol string = "ChangeProtocol"
+	ExecutePayLoad       string = "ExecutePayLoad"
+	ExecuteCleanUp       string = "ExecuteCleanUp"
+	GetSystemInfo        string = "GetSystemInfo"
+	GetApplication       string = "GetApplication"
+	StopAgent            string = "StopAgent"
+	ChangeProtocolToTCP  string = "ChangeProtocolToTCP"
+	ChangeProtocolToHTTP string = "ChangeProtocolToHTTP"
 )
 
 func main() {
-	var err error
-	Network.NgMgr, err = Network.NewNetworkManager()
-	if err != nil {
-		panic(err)
-	}
-
 	if err := loadEnv(); err != nil {
 		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
 		time.Sleep(5 * time.Second)
 		return
+	}
+
+	var err error
+	Network.NgMgr, err = Network.NewNetworkManager()
+	if err != nil {
+		panic(err)
 	}
 
 	_, uuid, err := initSysutil()
@@ -89,9 +88,8 @@ func initSysutil() (*Extension.Sysutils, [16]byte, error) {
 }
 
 func registerAgent(uuid [16]byte) error {
-
-	hsItem := HSProtocol.HS{
-		ProtocolID:     HSProtocol.HTTP,
+	hsItem := &HSProtocol.HS{
+		ProtocolID:     HSProtocol.UNKNOWN,
 		HealthStatus:   HSProtocol.NEW,
 		Command:        HSProtocol.UPDATE_AGENT_STATUS,
 		Identification: 12345,
@@ -137,7 +135,7 @@ func executeCommand(uuid [16]byte) error {
 	}
 
 	protocol := agsRcrd[0].Protocol
-	hsItem := HSProtocol.HS{
+	hsItem := &HSProtocol.HS{
 		ProtocolID:     protocol,
 		HealthStatus:   HSProtocol.RUN,
 		Command:        HSProtocol.FETCH_INSTRUCTION,
@@ -175,7 +173,7 @@ func executeCommand(uuid [16]byte) error {
 	instD.Cleanup = ReplaceDomainWithEnv(instD.Cleanup)
 	instD.Command = ReplaceagentUUID(instD.Command, HSProtocol.ByteArrayToHexString(uuid))
 	instD.Cleanup = ReplaceagentUUID(instD.Cleanup, HSProtocol.ByteArrayToHexString(uuid))
-	//fmt.Println(instD.AgentAction)
+
 	switch instD.AgentAction {
 	case ExecutePayLoad:
 		if err := runCommand(instD, hsItem); err != nil {
@@ -200,10 +198,16 @@ func executeCommand(uuid [16]byte) error {
 		fmt.Println("잠시후 종료...")
 		time.Sleep(5 * time.Second)
 		os.Exit(0)
-	case ChangeProtocol:
-		if err := Network.NgMgr.ChangeProtocol(ack.ProtocolID); err != nil {
+	case ChangeProtocolToTCP:
+		if err := Network.NgMgr.ChangeProtocol(HSProtocol.TCP); err != nil {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
+		fmt.Println("Agent Change Protocol Type by TCP")
+	case ChangeProtocolToHTTP:
+		if err := Network.NgMgr.ChangeProtocol(HSProtocol.HTTP); err != nil {
+			return fmt.Errorf("명령어 실행 실패: %v", err)
+		}
+		fmt.Println("Agent Change Protocol Type by HTTP")
 	}
 
 	if err = Core.ChangeStatusToWait(ack); err != nil {
@@ -213,8 +217,8 @@ func executeCommand(uuid [16]byte) error {
 	return nil
 }
 
-func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error {
-	if err := Core.ChangeStatusToRun(&hsItem); err != nil {
+func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) error {
+	if err := Core.ChangeStatusToRun(hsItem); err != nil {
 		return fmt.Errorf("상태 변경 실패: %v", err)
 	}
 
@@ -234,12 +238,12 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	if err != nil {
 		fmt.Println("====== Run Fail ===== ")
 		fmt.Println()
-		if err := Network.NgMgr.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
+		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
 		return fmt.Errorf("명령어 실행 중 에러: %v", err)
 	}
-	if err := Network.NgMgr.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
+	if err := Network.NgMgr.SendLogData(hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
 	fmt.Println("====== Run success ===== ")
@@ -247,8 +251,8 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	return nil
 }
 
-func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error {
-	if err := Core.ChangeStatusToRun(&hsItem); err != nil {
+func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) error {
+	if err := Core.ChangeStatusToRun(hsItem); err != nil {
 		return fmt.Errorf("상태 변경 실패: %v", err)
 	}
 
@@ -262,12 +266,12 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem HSProtocol.HS) error
 	cmdLog, err := shell.Execute(instD.Cleanup)
 	fmt.Println("cmdLog : " + cmdLog)
 	if err != nil {
-		if err := Network.NgMgr.SendLogData(&hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
+		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
 		return fmt.Errorf("명령어 실행 중 에러: %v", err)
 	}
-	if err := Network.NgMgr.SendLogData(&hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
+	if err := Network.NgMgr.SendLogData(hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
 	return nil
