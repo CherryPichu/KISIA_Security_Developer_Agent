@@ -3,7 +3,7 @@ module agent
 go 1.23.0
 
 require (
-	github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.3
+	github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.4
 	github.com/elastic/go-sysinfo v1.14.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1

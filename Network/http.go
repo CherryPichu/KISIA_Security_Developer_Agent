@@ -21,7 +21,7 @@ func sendPacketByHttp(hs *HSProtocol.HS) (*HSProtocol.HS, error) {
 	}
 
 	// HTTP POST 요청 생성
-	url := "http://" + os.Getenv("SERVER_IP") + "/api/checkInstReq" // 실제 서버 URL로 변경
+	url := "http://" + os.Getenv("SERVER_IP") + ":" + os.Getenv("HTTP_PORT") + "/api/checkInstReq" // 실제 서버 URL로 변경
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		fmt.Println("Error creating HTTP request:", err)
