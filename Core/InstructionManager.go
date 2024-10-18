@@ -5,15 +5,16 @@ import (
 )
 
 type ExtendedInstructionData struct {
-	ID               string `yaml:"id"`
-	MITREID          string `yaml:"MITRE_ID"`
-	Description      string `yaml:"Description"`
-	Tool             string `yaml:"tool"`
-	RequisiteCommand string `yaml:"requisite_command"`
-	Command          string `yaml:"command"`
-	Cleanup          string `yaml:"cleanup"`
-	MessageUUID      string `yaml:"messageUUID"`
-	AgentAction      string `yaml:"agentAction"`
+	ID               string   `yaml:"id"`
+	MITREID          string   `yaml:"MITRE_ID"`
+	Description      string   `yaml:"Description"`
+	Tool             string   `yaml:"tool"`
+	RequisiteCommand string   `yaml:"requisite_command"`
+	Command          string   `yaml:"command"`
+	Cleanup          string   `yaml:"cleanup"`
+	MessageUUID      string   `yaml:"messageUUID"`
+	AgentAction      string   `yaml:"agentAction"`
+	Files            []string `yaml:"files"`
 }
 
 // ToBytes는 InstructionData 구조체를 YAML 바이트 슬라이스로 변환하는 함수입니다.

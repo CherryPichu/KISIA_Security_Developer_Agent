@@ -55,11 +55,11 @@ func (ng *NetworkManager) connectTCP() error {
 	fmt.Println("Connection 시도")
 	var conn net.Conn
 	conn, err := net.Dial("tcp", os.Getenv("SERVER_IP")+":8080")
-	fmt.Println(os.Getenv("SERVER_IP") + ":8080")
-	tcpConn := conn.(*net.TCPConn)
 	if err != nil {
 		return err
 	}
+	fmt.Println(os.Getenv("SERVER_IP") + ":8080")
+	tcpConn := conn.(*net.TCPConn)
 
 	message := ""
 	// ping

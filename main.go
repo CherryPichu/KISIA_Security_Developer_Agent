@@ -34,6 +34,8 @@ func main() {
 	var err error
 	Network.NgMgr, err = Network.NewNetworkManager()
 	if err != nil {
+		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
+		time.Sleep(5 * time.Second)
 		panic(err)
 	}
 
@@ -41,18 +43,18 @@ func main() {
 	if err != nil {
 		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
 		time.Sleep(5 * time.Second)
-		return
+		panic(err)
 	}
 
 	if err := registerAgent(uuid); err != nil {
 		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
 		time.Sleep(5 * time.Second)
-		return
+		panic(err)
 	}
 	if err := collectInitialInfo(); err != nil {
 		fmt.Println("(5 초뒤 종료)에러 발생 : " + err.Error())
 		time.Sleep(5 * time.Second)
-		return
+		panic(err)
 	}
 
 	// stage 2-3 : 반복 실행
@@ -67,8 +69,18 @@ func main() {
 
 func loadEnv() error {
 	err := godotenv.Load()
+
+	exePath, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("(5 초뒤 종료)에러 발생 : %v", err)
+		return fmt.Errorf("Error getting executable path:", err)
+	}
+	os.Setenv("exePath", exePath)
+
+	if err != nil {
+		fmt.Println(".env 파일이 없음; Default 값 사용.")
+		os.Setenv("SERVER_IP", "httpsbas.com")
+		os.Setenv("HTTP_PORT", "8002")
+		//return fmt.Errorf("(5 초뒤 종료)에러 발생 : %v", err)
 	}
 	return nil
 }
@@ -167,12 +179,9 @@ func executeCommand(uuid [16]byte) error {
 	if err = Core.ChangeStatusToRun(ack); err != nil {
 		return err
 	}
-	instD.Command = replacePlaceholder(instD.Command)
-	instD.Cleanup = replacePlaceholder(instD.Cleanup)
-	instD.Command = ReplaceDomainWithEnv(instD.Command)
-	instD.Cleanup = ReplaceDomainWithEnv(instD.Cleanup)
-	instD.Command = ReplaceagentUUID(instD.Command, HSProtocol.ByteArrayToHexString(uuid))
-	instD.Cleanup = ReplaceagentUUID(instD.Cleanup, HSProtocol.ByteArrayToHexString(uuid))
+
+	venti := &Core.Venti{}
+	instD.Command, instD.Cleanup = venti.ReplaceString(instD.Command, instD.Cleanup, instD.Files)
 
 	switch instD.AgentAction {
 	case ExecutePayLoad:
