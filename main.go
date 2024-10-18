@@ -69,19 +69,28 @@ func main() {
 
 func loadEnv() error {
 	err := godotenv.Load()
+	if err != nil {
+		fmt.Println(".env 파일이 없음; Default 값 사용.")
+		err := os.Setenv("SERVER_IP", "httpsbas.com")
+		if err != nil {
+			return err
+		}
+		err = os.Setenv("HTTP_PORT", "8002")
+		if err != nil {
+			return err
+		}
+		//return fmt.Errorf("(5 초뒤 종료)에러 발생 : %v", err)
+	}
 
 	exePath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("Error getting executable path:", err)
 	}
-	os.Setenv("exePath", exePath)
-
+	err = os.Setenv("exePath", exePath)
 	if err != nil {
-		fmt.Println(".env 파일이 없음; Default 값 사용.")
-		os.Setenv("SERVER_IP", "httpsbas.com")
-		os.Setenv("HTTP_PORT", "8002")
-		//return fmt.Errorf("(5 초뒤 종료)에러 발생 : %v", err)
+		return err
 	}
+
 	return nil
 }
 
