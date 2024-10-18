@@ -279,10 +279,9 @@ func (ng *NetworkManager) SendApplicationInfo() error {
 		return err
 	}
 
-	for i := 0; i < 10; i++ {
-		offset := len(fileNames) / 10
+	if len(fileNames) < 10 {
 		var chunk []Model.ProgramsRecord
-		chunk = fileList[offset*i : offset*(i+1)]
+		chunk = fileList
 
 		bapplist, err := prgdb.ToJSON(chunk)
 		if err != nil {
@@ -305,11 +304,41 @@ func (ng *NetworkManager) SendApplicationInfo() error {
 			return err
 		}
 		if ack.Command == HSProtocol.ERROR_ACK {
-			fmt.Println("Application 정보 송신 실패")
-			break
+			return fmt.Errorf("Application 정보 송신 실패")
+		}
+
+		return nil
+	} else {
+		for i := 0; i < 10; i++ {
+			offset := len(fileNames) / 10
+			var chunk []Model.ProgramsRecord
+			chunk = fileList[offset*i : offset*(i+1)]
+
+			bapplist, err := prgdb.ToJSON(chunk)
+			if err != nil {
+				return err
+			}
+
+			hsItem := &HSProtocol.HS{
+				ProtocolID:     HSProtocol.UNKNOWN, // 자동으로 채워줌
+				HealthStatus:   HSProtocol.NEW,
+				Command:        HSProtocol.SEND_AGENT_APP_INFO,
+				Identification: 12345, // 아직 구현 안함
+				Checksum:       0,     // 자동으로 채워줌
+				TotalLength:    0,     // 자동으로 채워줌
+				UUID:           uuid,
+				Data:           bapplist,
+			}
+			ack, err := ng.SendPacket(hsItem)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			if ack.Command == HSProtocol.ERROR_ACK {
+				return fmt.Errorf("Application 정보 송신 실패")
+			}
 		}
 	}
-
 	return nil
 }
 

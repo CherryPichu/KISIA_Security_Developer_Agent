@@ -1,7 +1,6 @@
 package Core
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -33,7 +32,6 @@ func (vt *Venti) replaceAgentSig(str string) string {
 func (vt *Venti) replaceFileSig(str string, files []string) string {
 	for i, v := range files {
 		i += 1
-		fmt.Println("@file" + strconv.Itoa(i))
 		str = strings.Replace(str, "@file"+strconv.Itoa(i), v, -1)
 	}
 	return str

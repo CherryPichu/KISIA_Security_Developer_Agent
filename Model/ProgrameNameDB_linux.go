@@ -77,7 +77,7 @@ func GetApplicationList_fileBase() ([]string, error) {
 	var shell Execute.ICommandExecutor
 	shell = Execute.NewShell()
 
-	output, err := shell.Execute("apt list --installed | grep -v \"automatic\" | awk '{print $1}' | head -n 200")
+	output, err := shell.Execute("apt list --installed | grep -v \"automatic\" | awk '{print $1}' | head -n 300")
 	if err != nil {
 		return nil, err
 	}
