@@ -1,7 +1,11 @@
-github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.3 h1:PeWu8lt6d/ab/P8fP6+1sMP3Pf9saPVbjircZuZIASY=
-github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.3/go.mod h1:7Kv1PDaclTyg/VJ3xPahHfJiYF1GqXIWsbYlGKlUV2c=
 github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.4 h1:wj1dL8brvAngd9Aw0H6SCJbCYeTR5XxfLGY6kImjLb8=
 github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.2.4/go.mod h1:7Kv1PDaclTyg/VJ3xPahHfJiYF1GqXIWsbYlGKlUV2c=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.0 h1:RjPg3RDLQNy6cnkhrHYZ8GnCoGvRK13AD38N59fVYt8=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.0/go.mod h1:7Kv1PDaclTyg/VJ3xPahHfJiYF1GqXIWsbYlGKlUV2c=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.1 h1:Agpek4M+8Y8y2AFImZBaxuoGRtRAiMoRdSLIqbNQznI=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.1/go.mod h1:7Kv1PDaclTyg/VJ3xPahHfJiYF1GqXIWsbYlGKlUV2c=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.2 h1:ynPgDOqFNcO25/Bj7AwZnRQiUjkrg8etRsF4Xigh02A=
+github.com/HTTPs-omma/HTTPsBAS-HSProtocol v1.4.2/go.mod h1:7Kv1PDaclTyg/VJ3xPahHfJiYF1GqXIWsbYlGKlUV2c=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
