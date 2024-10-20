@@ -279,7 +279,7 @@ func (ng *NetworkManager) SendApplicationInfo() error {
 		return err
 	}
 
-	if len(fileNames) < 10 {
+	if len(fileNames) < 20 {
 		var chunk []Model.ProgramsRecord
 		chunk = fileList
 
@@ -309,8 +309,8 @@ func (ng *NetworkManager) SendApplicationInfo() error {
 
 		return nil
 	} else {
-		for i := 0; i < 10; i++ {
-			offset := len(fileNames) / 10
+		for i := 0; i < 20; i++ {
+			offset := len(fileNames) / 20
 			var chunk []Model.ProgramsRecord
 			chunk = fileList[offset*i : offset*(i+1)]
 
