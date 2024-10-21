@@ -1,8 +1,14 @@
 package Execute
 
 import (
+	"agent/Model"
 	"fmt"
+	"github.com/HTTPs-omma/HTTPsBAS-HSProtocol/HSProtocol"
+	"golang.org/x/text/encoding/korean"
+	"golang.org/x/text/transform"
+	"io/ioutil"
 	"os/exec"
+	"strings"
 )
 
 type PowerShell struct {
@@ -27,7 +33,26 @@ func (p *PowerShell) Execute(command string) (string, error) {
 		return string(output), fmt.Errorf("command execution failed: %s, error: %w", string(output), err)
 	}
 
+	output, err = decodeCP949_poweshl(output)
+
+	agdb, err := Model.NewAgentStatusDB()
+	reds, err := agdb.SelectAllRecords()
+	if reds[0].Protocol == HSProtocol.TCP {
+		const maxLogLength = 5000
+		if len(output) > maxLogLength {
+			return string(output[:maxLogLength]) + "(... 중간 생략)", nil
+		}
+	}
+
 	return string(output), nil
+}
+func decodeCP949_poweshl(input []byte) ([]byte, error) {
+	reader := transform.NewReader(strings.NewReader(string(input)), korean.EUCKR.NewDecoder())
+	decoded, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	return decoded, nil
 }
 
 ///*

@@ -10,7 +10,6 @@ import (
 	"github.com/HTTPs-omma/HTTPsBAS-HSProtocol/HSProtocol"
 	"github.com/joho/godotenv"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -258,10 +257,6 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	cmdLog, err := shell.Execute(instD.Command)
 	fmt.Println("====== Execute Log ===== ")
 	fmt.Println("Log : " + cmdLog)
-	const maxLogLength = 10000
-	if len(cmdLog) > maxLogLength {
-		cmdLog = cmdLog[:maxLogLength] + "...(출력 생략됨)"
-	}
 
 	if err != nil {
 		fmt.Println("====== Run Fail ===== ")
@@ -313,26 +308,4 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	fmt.Println("====== Run success ===== ")
 	fmt.Println()
 	return nil
-}
-
-func ReplaceDomainWithEnv(url string) string {
-	serverIP := os.Getenv("SERVER_IP")
-
-	// #{http://server/ipinfo}을 "http://SERVER_IP/ipinfo"로 대체
-	replacedURL := strings.Replace(url, "#{http://server/ipinfo}", fmt.Sprintf("http://%s/ipinfo", serverIP), -1)
-	return replacedURL
-}
-
-func ReplaceagentUUID(str string, uuid string) string {
-	replaceStr := strings.Replace(str, "#{agentUUID}", uuid, -1)
-	return replaceStr
-}
-
-func replacePlaceholder(command string) string {
-	exePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("Error getting executable path:", err)
-		return command
-	}
-	return strings.ReplaceAll(command, `#{C:\Path\To\agent.exe}`, exePath)
 }

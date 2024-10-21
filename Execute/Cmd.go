@@ -56,6 +56,7 @@ func (c *Cmd) Execute(command string) (string, error) {
 
 	return decodedOutput, nil
 }
+
 func decodeCP949(input []byte) (string, error) {
 	reader := transform.NewReader(strings.NewReader(string(input)), korean.EUCKR.NewDecoder())
 	decoded, err := ioutil.ReadAll(reader)
