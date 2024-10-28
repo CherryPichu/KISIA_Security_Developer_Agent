@@ -10,6 +10,7 @@ import (
 	"github.com/HTTPs-omma/HTTPsBAS-HSProtocol/HSProtocol"
 	"github.com/joho/godotenv"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -60,7 +61,7 @@ func main() {
 	for {
 		time.Sleep(3 * time.Second)
 		if err := executeCommand(uuid); err != nil {
-			fmt.Println("Error during command execution: ", err)
+			logMessage("ERROR", "명령어 실행 중 에러: "+err.Error())
 			continue
 		}
 	}
@@ -69,7 +70,7 @@ func main() {
 func loadEnv() error {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Println(".env 파일이 없음; Default 값 사용.")
+		logMessage("INFO", ".env 파일이 없음; Default 값 사용.")
 		err := os.Setenv("SERVER_IP", "httpsbas.com")
 		if err != nil {
 			return err
@@ -166,7 +167,7 @@ func executeCommand(uuid [16]byte) error {
 		Data:           []byte{},
 	}
 
-	fmt.Print("fetch instruction : ")
+	logMessageNoLn("INFO", "fetch instruction : ")
 	ack, err := Network.NgMgr.SendPacket(hsItem)
 	if err != nil {
 		return fmt.Errorf("패킷 전송 실패: %v", err)
@@ -189,7 +190,7 @@ func executeCommand(uuid [16]byte) error {
 	}
 
 	venti := &Core.Venti{}
-	instD.Command, instD.Cleanup = venti.ReplaceString(instD.Command, instD.Cleanup, instD.Files)
+	instD.Command, instD.Cleanup = venti.ReplaceString(instD.Command, instD.Cleanup, instD.Files, instD.Update)
 
 	switch instD.AgentAction {
 	case ExecutePayLoad:
@@ -212,7 +213,7 @@ func executeCommand(uuid [16]byte) error {
 		if err := Core.ChangeStatusToDeleted(ack); err != nil {
 			return fmt.Errorf("명령어 실행 실패: %v", err)
 		}
-		fmt.Println("잠시후 종료...")
+		logMessage("INFO", "잠시후 종료...")
 		time.Sleep(5 * time.Second)
 		os.Exit(0)
 	case ChangeProtocolToTCP:
@@ -226,7 +227,7 @@ func executeCommand(uuid [16]byte) error {
 		}
 		fmt.Println("Agent Change Protocol Type by HTTP")
 	default:
-		fmt.Println("invalid Action String")
+		logMessage("ERROR", "Invalid Action String")
 	}
 
 	if err = Core.ChangeStatusToWait(ack); err != nil {
@@ -234,6 +235,17 @@ func executeCommand(uuid [16]byte) error {
 	}
 
 	return nil
+}
+
+// 로그 메시지 출력 함수
+func logMessage(level string, message string) {
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("[%s] [%s] %s\n", currentTime, level, message)
+}
+
+func logMessageNoLn(level string, message string) {
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("[%s] [%s] %s", currentTime, level, message)
 }
 
 func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) error {
@@ -252,14 +264,37 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 		fmt.Println(" No Shell! Tool 필드 값이 정확힌 지 확인해주세요. ex. cmd, powershell, bash")
 		return nil
 	}
+	logMessage("INFO", "명령어 실행 중")
 
-	fmt.Println("====== Running ===== ")
+	// 24.10.21 임시로 추가.
+	if strings.Contains(instD.Command, "@exitcode") {
+		instD.Command = strings.Replace(instD.Command, "@exitcode", "", -1)
+
+		if err := Network.NgMgr.SendLogData(hsItem, "exit 성공!", instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
+			return fmt.Errorf("실행 로그 전송 실패: %v", err)
+		}
+		output, err := shell.Execute(instD.Command)
+		if err != nil {
+			fmt.Println(output)
+		} else {
+			os.Exit(0)
+		}
+		return nil
+	}
+
+	logMessage("INFO", "command : "+instD.Command)
+
 	cmdLog, err := shell.Execute(instD.Command)
-	fmt.Println("====== Execute Log ===== ")
-	fmt.Println("Log : " + cmdLog)
+	logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
+	//fmt.Println("Log : " + cmdLog)
+	//fmt.Println("Log : " + c)
+
+	if len(cmdLog) > 8000 {
+		cmdLog = cmdLog[0:8000] + "(.. 이하 생략)"
+	}
 
 	if err != nil {
-		fmt.Println("====== Run Fail ===== ")
+		logMessage("ERROR", "명령어 실행 실패")
 		fmt.Println()
 		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
@@ -269,7 +304,7 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	if err := Network.NgMgr.SendLogData(hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
-	fmt.Println("====== Run success ===== ")
+	logMessage("INFO", "명령어 실행 성공")
 	fmt.Println()
 	return nil
 }
@@ -291,12 +326,16 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 		return nil
 	}
 
-	fmt.Println("====== Running ===== ")
+	logMessage("INFO", "명령어 실행 중")
+	logMessage("INFO", "command : "+instD.Command)
 	cmdLog, err := shell.Execute(instD.Cleanup)
-	fmt.Println("====== Execute Log ===== ")
-	fmt.Println("Log : " + cmdLog)
+	logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
+
+	if len(cmdLog) > 8000 {
+		cmdLog = cmdLog[0:8000] + "(.. 이하 생략)"
+	}
 	if err != nil {
-		fmt.Println("====== Run Fail ===== ")
+		logMessage("ERROR", "명령어 실행 실패")
 		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
 			return fmt.Errorf("실행 로그 전송 실패: %v", err)
 		}
@@ -305,7 +344,7 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	if err := Network.NgMgr.SendLogData(hsItem, cmdLog, instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_SUCCESS); err != nil {
 		return fmt.Errorf("실행 로그 전송 실패: %v", err)
 	}
-	fmt.Println("====== Run success ===== ")
+	logMessage("INFO", "명령어 실행 성공")
 	fmt.Println()
 	return nil
 }

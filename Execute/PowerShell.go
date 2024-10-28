@@ -32,8 +32,10 @@ func (p *PowerShell) Execute(command string) (string, error) {
 	if err != nil {
 		return string(output), fmt.Errorf("command execution failed: %s, error: %w", string(output), err)
 	}
-
 	output, err = decodeCP949_poweshl(output)
+	if err != nil {
+		return string(output), fmt.Errorf("command execution failed: %s, error: %w", string(output), err)
+	}
 
 	agdb, err := Model.NewAgentStatusDB()
 	reds, err := agdb.SelectAllRecords()

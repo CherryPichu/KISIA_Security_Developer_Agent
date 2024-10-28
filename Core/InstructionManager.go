@@ -15,6 +15,7 @@ type ExtendedInstructionData struct {
 	MessageUUID      string   `yaml:"messageUUID"`
 	AgentAction      string   `yaml:"agentAction"`
 	Files            []string `yaml:"files"`
+	Update           string   `yaml:"update"`
 }
 
 // ToBytes는 InstructionData 구조체를 YAML 바이트 슬라이스로 변환하는 함수입니다.
