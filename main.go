@@ -286,9 +286,14 @@ func runCommand(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 
 	cmdLog, err := shell.Execute(instD.Command)
 	if len(cmdLog) > 100 {
-		cmdLog = cmdLog[0:100] + "(.. 이하 생략)"
+		logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog[0:100]))
+	} else {
+		logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
 	}
-	logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
+
+	if len(cmdLog) > 8000 {
+		cmdLog = cmdLog[0:8000] + "(.. 이하 생략)"
+	}
 
 	if err != nil {
 		logMessage("ERROR", "명령어 실행 실패")
@@ -327,10 +332,14 @@ func runCleanup(instD *Core.ExtendedInstructionData, hsItem *HSProtocol.HS) erro
 	logMessage("INFO", "Run  Procedures ID (CleanUp) : "+instD.ID)
 	cmdLog, err := shell.Execute(instD.Cleanup)
 	if len(cmdLog) > 100 {
-		cmdLog = cmdLog[0:100] + "(.. 이하 생략)"
+		logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog[0:100]))
+	} else {
+		logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
 	}
-	logMessage("DEBUG", fmt.Sprintf("Execute Log: %s", cmdLog))
 
+	if len(cmdLog) > 8000 {
+		cmdLog = cmdLog[0:8000] + "(.. 이하 생략)"
+	}
 	if err != nil {
 		logMessage("ERROR", "명령어 실행 실패")
 		if err := Network.NgMgr.SendLogData(hsItem, err.Error(), instD.Command, instD.ID, instD.MessageUUID, Network.EXIT_FAIL); err != nil {
