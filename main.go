@@ -71,7 +71,7 @@ func loadEnv() error {
 	err := godotenv.Load()
 	if err != nil {
 		logMessage("INFO", ".env 파일이 없음; Default 값 사용.")
-		err := os.Setenv("SERVER_IP", "httpsbas.com")
+		err := os.Setenv("SERVER_IP", "uskawjdu.iptime.org")
 		if err != nil {
 			return err
 		}
